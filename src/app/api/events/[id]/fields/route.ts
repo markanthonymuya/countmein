@@ -34,7 +34,7 @@ export async function PUT(req: Request, { params }: Params) {
       eventId: params.id,
       label: f.label,
       fieldType: f.fieldType,
-      options: f.options ?? null,
+      options: (f.options ?? null) as any,
       isRequired: f.isRequired,
       sortOrder: f.sortOrder,
     })),

@@ -47,7 +47,7 @@ export default function RafflePage() {
 
   function handleRemoveToggle() {
     if (winner && removeWinner) {
-      setExcluded(prev => new Set([...prev, winner.id]))
+      setExcluded(prev => { const s = new Set(prev); s.add(winner.id); return s })
     }
   }
 
