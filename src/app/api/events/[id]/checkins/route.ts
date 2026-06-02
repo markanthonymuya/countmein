@@ -9,6 +9,7 @@ type Params = { params: { id: string } }
 const schema = z.object({
   registrationCode: z.string(),
   type: z.enum(['CHECKIN', 'CHECKOUT']),
+  eventDayId: z.string().optional(),
 })
 
 export async function POST(req: Request, { params }: Params) {
@@ -23,9 +24,17 @@ export async function POST(req: Request, { params }: Params) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
 
+  const { registrationCode, type, eventDayId } = parsed.data
+
   const reg = await prisma.registration.findUnique({
-    where: { registrationCode: parsed.data.registrationCode.toUpperCase() },
-    include: { checkIns: { orderBy: { scannedAt: 'desc' }, take: 1 } },
+    where: { registrationCode: registrationCode.toUpperCase() },
+    include: {
+      checkIns: {
+        where: eventDayId ? { eventDayId } : { eventDayId: null },
+        orderBy: { scannedAt: 'desc' },
+        take: 1,
+      },
+    },
   })
   if (!reg || reg.eventId !== params.id)
     return NextResponse.json({ error: 'Registration not found for this event' }, { status: 404 })
@@ -33,20 +42,31 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Registration not approved' }, { status: 400 })
 
   const lastType = reg.checkIns[0]?.type
-  if (parsed.data.type === 'CHECKIN' && lastType === 'CHECKIN')
+  if (type === 'CHECKIN' && lastType === 'CHECKIN')
     return NextResponse.json({ error: 'Already checked in' }, { status: 400 })
-  if (parsed.data.type === 'CHECKOUT' && lastType !== 'CHECKIN')
+  if (type === 'CHECKOUT' && lastType !== 'CHECKIN')
     return NextResponse.json({ error: 'Not currently checked in' }, { status: 400 })
 
   const checkIn = await prisma.checkIn.create({
-    data: { registrationId: reg.id, type: parsed.data.type },
+    data: {
+      registrationId: reg.id,
+      type,
+      eventDayId: eventDayId ?? null,
+    },
   })
 
-  const insideCount = await prisma.checkIn.groupBy({
-    by: ['registrationId'],
-    where: { registration: { eventId: params.id, status: 'APPROVED' } },
-    having: { scannedAt: { _max: {} } },
+  // Count people currently inside (CHECKIN as latest action, scoped to day if relevant)
+  const allApproved = await prisma.registration.findMany({
+    where: { eventId: params.id, status: 'APPROVED' },
+    include: {
+      checkIns: {
+        where: eventDayId ? { eventDayId } : { eventDayId: null },
+        orderBy: { scannedAt: 'desc' },
+        take: 1,
+      },
+    },
   })
+  const insideCount = allApproved.filter(r => r.checkIns[0]?.type === 'CHECKIN').length
 
   return NextResponse.json({
     success: true,
@@ -54,5 +74,6 @@ export async function POST(req: Request, { params }: Params) {
     scannedAt: checkIn.scannedAt,
     registrationCode: reg.registrationCode,
     responses: reg.responses,
+    insideCount,
   })
 }

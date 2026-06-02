@@ -8,11 +8,12 @@ datasource db {
 }
 
 model Organizer {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   passwordHash String
-  createdAt    DateTime @default(now())
+  isDeleted    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
   events       Event[]
 }
 
@@ -45,6 +46,17 @@ model Event {
   formFields          FormField[]
   registrations       Registration[]
   announcements       Announcement[]
+  days                EventDay[]
+}
+
+model EventDay {
+  id        String    @id @default(uuid())
+  eventId   String
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  label     String
+  date      DateTime
+  sortOrder Int
+  checkIns  CheckIn[]
 }
 
 enum FieldType {
@@ -97,11 +109,13 @@ enum CheckInType {
 }
 
 model CheckIn {
-  id             String       @id @default(uuid())
+  id             String    @id @default(uuid())
   registrationId String
   registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  eventDayId     String?
+  eventDay       EventDay? @relation(fields: [eventDayId], references: [id])
   type           CheckInType
-  scannedAt      DateTime     @default(now())
+  scannedAt      DateTime  @default(now())
 }
 
 model Announcement {

@@ -2,16 +2,25 @@
 import { useParams } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 
-type Result = { success: boolean; type?: string; scannedAt?: string; responses?: any; error?: string }
+type EventDay = { id: string; label: string; date: string }
+type Result = { success: boolean; type?: string; scannedAt?: string; responses?: any; insideCount?: number; error?: string }
 
 export default function ScannerPage() {
   const { id } = useParams<{ id: string }>()
   const [mode, setMode] = useState<'CHECKIN' | 'CHECKOUT'>('CHECKIN')
+  const [days, setDays] = useState<EventDay[]>([])
+  const [selectedDayId, setSelectedDayId] = useState<string | undefined>(undefined)
   const [result, setResult] = useState<Result | null>(null)
   const [manualCode, setManualCode] = useState('')
   const [scanning, setScanning] = useState(false)
   const scannerRef = useRef<any>(null)
-  const divRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch(`/api/events/${id}/days`).then(r => r.json()).then((data: EventDay[]) => {
+      setDays(data)
+      if (data.length > 0) setSelectedDayId(data[0].id)
+    })
+  }, [id])
 
   useEffect(() => {
     let scanner: any
@@ -31,13 +40,13 @@ export default function ScannerPage() {
     }
     if (scanning) startScanner()
     return () => { try { scannerRef.current?.clear() } catch {} }
-  }, [scanning, mode])
+  }, [scanning, mode, selectedDayId])
 
   async function scan(code: string) {
     const res = await fetch(`/api/events/${id}/checkins`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ registrationCode: code, type: mode }),
+      body: JSON.stringify({ registrationCode: code, type: mode, eventDayId: selectedDayId }),
     })
     const data = await res.json()
     setResult(res.ok ? { success: true, ...data } : { success: false, error: data.error })
@@ -51,12 +60,36 @@ export default function ScannerPage() {
     setManualCode('')
   }
 
+  const selectedDay = days.find(d => d.id === selectedDayId)
+
   return (
     <div className="max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <a href={`/organizer/events/${id}`} className="text-sm text-gray-500 hover:text-gray-700">← Back</a>
         <h1 className="text-xl font-bold text-gray-900">QR Scanner</h1>
       </div>
+
+      {/* Day selector — only shown for multi-day events */}
+      {days.length > 0 && (
+        <div className="bg-indigo-50 rounded-xl p-4 mb-4">
+          <label className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2 block">Scanning for day</label>
+          <div className="flex flex-wrap gap-2">
+            {days.map(day => (
+              <button key={day.id} onClick={() => setSelectedDayId(day.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  selectedDayId === day.id ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                }`}>
+                {day.label}
+              </button>
+            ))}
+          </div>
+          {selectedDay && (
+            <p className="text-xs text-indigo-500 mt-1.5">
+              {new Date(selectedDay.date).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Mode toggle */}
       <div className="flex gap-2 mb-4">
@@ -76,12 +109,12 @@ export default function ScannerPage() {
       {result && (
         <div className={`rounded-xl p-4 mb-4 text-sm font-medium ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
           {result.success
-            ? `✓ ${result.type === 'CHECKIN' ? 'Checked in' : 'Checked out'} at ${new Date(result.scannedAt!).toLocaleTimeString()}`
+            ? `✓ ${result.type === 'CHECKIN' ? 'Checked in' : 'Checked out'} · ${new Date(result.scannedAt!).toLocaleTimeString()} · ${result.insideCount ?? 0} inside`
             : `✗ ${result.error}`}
         </div>
       )}
 
-      {/* Camera scanner */}
+      {/* Camera */}
       {!scanning ? (
         <button onClick={() => setScanning(true)}
           className="w-full bg-indigo-600 text-white rounded-xl py-4 font-semibold hover:bg-indigo-700 transition-colors mb-4">
@@ -89,9 +122,10 @@ export default function ScannerPage() {
         </button>
       ) : (
         <div className="mb-4">
-          <div id="qr-reader" ref={divRef} className="rounded-xl overflow-hidden" />
-          <button onClick={() => setScanning(false)}
-            className="mt-2 w-full text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+          <div id="qr-reader" className="rounded-xl overflow-hidden" />
+          <button onClick={() => setScanning(false)} className="mt-2 w-full text-sm text-gray-500 hover:text-gray-700">
+            Cancel
+          </button>
         </div>
       )}
 

@@ -2,13 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Field = {
-  label: string
-  fieldType: string
-  options: string
-  isRequired: boolean
-  sortOrder: number
-}
+type Field = { label: string; fieldType: string; options: string; isRequired: boolean; sortOrder: number }
+type Day = { label: string; date: string }
 
 const FIELD_TYPES = ['TEXT', 'EMAIL', 'TEL', 'NUMBER', 'SELECT', 'RADIO', 'CHECKBOX', 'TEXTAREA']
 
@@ -17,6 +12,8 @@ export default function NewEventPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fields, setFields] = useState<Field[]>([])
+  const [isMultiDay, setIsMultiDay] = useState(false)
+  const [days, setDays] = useState<Day[]>([{ label: 'Day 1', date: '' }])
   const [form, setForm] = useState({
     title: '', description: '', date: '', location: '',
     maxCapacity: 100, isPrivate: false,
@@ -65,6 +62,21 @@ export default function NewEventPage() {
     }
 
     const event = await res.json()
+
+    // Save event days if multi-day
+    if (isMultiDay && days.filter(d => d.date).length > 0) {
+      await fetch(`/api/events/${event.id}/days`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          days: days.filter(d => d.date).map((d, i) => ({
+            label: d.label,
+            date: new Date(d.date).toISOString(),
+            sortOrder: i,
+          })),
+        }),
+      })
+    }
 
     if (fields.length > 0) {
       await fetch(`/api/events/${event.id}/fields`, {
@@ -122,6 +134,35 @@ export default function NewEventPage() {
             <input type="checkbox" checked={form.isPrivate} onChange={set('isPrivate')} className="rounded" />
             Make this event private (accessible by code only)
           </label>
+        </div>
+
+        {/* Multi-day */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+          <h2 className="font-semibold text-gray-800">Event Schedule</h2>
+          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+            <input type="checkbox" checked={isMultiDay} onChange={e => setIsMultiDay(e.target.checked)} className="rounded" />
+            This event spans multiple days
+          </label>
+          {isMultiDay && (
+            <div className="space-y-2">
+              {days.map((day, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input className="w-28 border border-gray-200 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder={`Day ${i + 1}`} value={day.label}
+                    onChange={e => setDays(prev => prev.map((d, idx) => idx === i ? { ...d, label: e.target.value } : d))} />
+                  <input type="datetime-local" className="flex-1 border border-gray-200 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    value={day.date}
+                    onChange={e => setDays(prev => prev.map((d, idx) => idx === i ? { ...d, date: e.target.value } : d))} />
+                  {days.length > 1 && (
+                    <button type="button" onClick={() => setDays(prev => prev.filter((_, idx) => idx !== i))}
+                      className="text-red-400 hover:text-red-600 text-sm px-1">✕</button>
+                  )}
+                </div>
+              ))}
+              <button type="button" onClick={() => setDays(prev => [...prev, { label: `Day ${prev.length + 1}`, date: '' }])}
+                className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add Day</button>
+            </div>
+          )}
         </div>
 
         {/* Payment */}

@@ -181,6 +181,10 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
                     className="inline-block mt-2 text-xs text-gray-500 hover:text-gray-700 underline">Download QR</a>
                 </div>
               )}
+              <a href={`/attendance/${data.code}`} target="_blank"
+                className="block text-center text-sm text-indigo-600 border border-indigo-200 rounded-xl py-2.5 hover:bg-indigo-50 transition-colors font-medium">
+                🏆 View & Share Attendance Record ↗
+              </a>
               {data.announcements.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-gray-700 mb-2">📢 From the Organizer</p>

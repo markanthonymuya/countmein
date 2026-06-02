@@ -6,6 +6,8 @@ type Registration = { id: string; registrationCode: string; status: string; resp
 type Announcement = { id: string; title: string; body: string; isSystem: boolean; createdAt: string }
 type Event = { id: string; title: string; date: string; location: string; maxCapacity: number; status: string; isPrivate: boolean; eventCode?: string; requiresPayment: boolean; paymentAmount: any; paymentInstructions: any; announcements: Announcement[] }
 
+const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-700',
   AWAITING_PAYMENT: 'bg-purple-100 text-purple-700',
@@ -136,6 +138,12 @@ export default function ManageEventPage() {
       {/* Registrants Tab */}
       {tab === 'registrants' && (
         <div>
+          <div className="flex items-center justify-between mb-3">
+            <a href={`/api/events/${id}/export`} target="_blank"
+              className="text-xs bg-gray-800 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 font-medium">
+              📥 Export Attendance CSV
+            </a>
+          </div>
           <div className="flex gap-2 flex-wrap mb-4">
             {['ALL', 'PENDING', 'AWAITING_PAYMENT', 'PAYMENT_SUBMITTED', 'APPROVED', 'REJECTED'].map(s => (
               <button key={s} onClick={() => setFilter(s)}
@@ -154,6 +162,13 @@ export default function ManageEventPage() {
                   <div>
                     <p className="font-medium text-sm text-gray-900">{name}</p>
                     <p className="text-xs text-gray-400 font-mono">{reg.registrationCode} · {new Date(reg.createdAt).toLocaleDateString()}</p>
+                    {reg.status === 'APPROVED' && (
+                      <a href={`${baseUrl}/attendance/${reg.registrationCode}`} target="_blank"
+                        className="text-xs text-indigo-500 hover:text-indigo-700 underline"
+                        onClick={e => e.stopPropagation()}>
+                        View attendance record ↗
+                      </a>
+                    )}
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[reg.status]}`}>
                     {reg.status.replace('_', ' ')}

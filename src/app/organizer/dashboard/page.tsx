@@ -27,10 +27,16 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">My Events</h1>
           <p className="text-sm text-gray-500 mt-0.5">Welcome back, {session.user.name}</p>
         </div>
-        <a href="/organizer/events/new"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors">
-          + New Event
-        </a>
+        <div className="flex gap-2">
+          <a href="/organizer/settings"
+            className="border border-gray-200 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+            Settings
+          </a>
+          <a href="/organizer/events/new"
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors">
+            + New Event
+          </a>
+        </div>
       </div>
 
       {events.length === 0 ? (
