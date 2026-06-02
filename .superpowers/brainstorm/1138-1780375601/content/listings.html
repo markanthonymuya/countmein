@@ -1,0 +1,152 @@
+<h2>Public Events Listing + Event Detail</h2>
+<p class="subtitle">How registrants discover and view events before registering. Click a card to select it for feedback.</p>
+
+<style>
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+.screen-card {
+  border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;
+  cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; background: #fff;
+}
+.screen-card:hover { border-color: #6366f1; box-shadow: 0 4px 16px rgba(99,102,241,0.12); }
+.screen-card.selected { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+.screen-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 6px 12px;
+  background: #eff6ff; border-bottom: 1px solid #e2e8f0; color: #3b82f6;
+}
+.phone-frame { background: #f1f5f9; margin: 12px; border-radius: 8px; padding: 10px; font-size: 10px; }
+.mock-topbar { background: #6366f1; color: #fff; padding: 6px 10px; border-radius: 5px 5px 0 0; font-weight: 600; font-size: 10px; margin: -10px -10px 8px -10px; }
+.mock-topbar.green { background: #16a34a; }
+.mock-divider { border: none; border-top: 1px solid #e2e8f0; margin: 6px 0; }
+.mock-btn { background: #6366f1; color: #fff; border-radius: 4px; padding: 5px 10px; font-size: 9px; font-weight: 600; text-align: center; margin-top: 4px; }
+.screen-name { text-align: center; font-size: 11px; font-weight: 600; padding: 8px; color: #334155; border-top: 1px solid #e2e8f0; }
+.event-card {
+  background: #fff; border-radius: 6px; margin-bottom: 8px;
+  overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.event-img { height: 40px; background: linear-gradient(135deg, #6366f1, #a78bfa); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); font-size: 8px; }
+.event-body { padding: 6px; }
+.event-title { font-weight: 700; font-size: 10px; color: #1e293b; }
+.event-meta { font-size: 8px; color: #94a3b8; margin-top: 2px; }
+.mock-tag { padding: 2px 5px; border-radius: 8px; font-size: 8px; font-weight: 600; }
+.tag-open { background: #dcfce7; color: #16a34a; }
+.tag-full { background: #fee2e2; color: #dc2626; }
+.tag-private { background: #fef3c7; color: #d97706; }
+.search-bar { background: #fff; border: 1px solid #cbd5e1; border-radius: 5px; padding: 5px 8px; font-size: 9px; color: #94a3b8; display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.detail-photo { height: 70px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 5px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.7); font-size: 8px; margin-bottom: 6px; }
+.capacity-bar-wrap { background: #e2e8f0; border-radius: 10px; height: 6px; margin: 4px 0; overflow: hidden; }
+.capacity-bar { background: #6366f1; height: 100%; border-radius: 10px; width: 72%; }
+.private-screen { background: #f8fafc; border-radius: 8px; padding: 16px; text-align: center; }
+</style>
+
+<div class="two-col">
+
+  <!-- Screen A: Public Events Listing -->
+  <div class="screen-card" data-choice="listing" onclick="toggleSelect(this)">
+    <div class="screen-label">Public — Events Listing</div>
+    <div class="phone-frame">
+      <div class="mock-topbar">🗓 Browse Events</div>
+
+      <div class="search-bar">🔍 Search events...</div>
+
+      <!-- Filter chips -->
+      <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="background:#6366f1;color:#fff;padding:2px 7px;border-radius:10px;font-size:8px;font-weight:600;">All</span>
+        <span style="background:#e2e8f0;color:#64748b;padding:2px 7px;border-radius:10px;font-size:8px;">Open</span>
+        <span style="background:#e2e8f0;color:#64748b;padding:2px 7px;border-radius:10px;font-size:8px;">This Week</span>
+        <span style="background:#e2e8f0;color:#64748b;padding:2px 7px;border-radius:10px;font-size:8px;">Free</span>
+      </div>
+
+      <!-- Event card 1 -->
+      <div class="event-card">
+        <div class="event-img">Event Photo</div>
+        <div class="event-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div class="event-title">Tech Summit 2026</div>
+            <span class="mock-tag tag-open">Open</span>
+          </div>
+          <div class="event-meta">Jun 15, 2026 · Makati City</div>
+          <div class="event-meta">248 / 500 registered</div>
+        </div>
+      </div>
+
+      <!-- Event card 2 -->
+      <div class="event-card">
+        <div class="event-img" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);">Event Photo</div>
+        <div class="event-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div class="event-title">UI/UX Design Conf</div>
+            <span class="mock-tag tag-full">Full</span>
+          </div>
+          <div class="event-meta">Jun 20, 2026 · BGC, Taguig</div>
+          <div class="event-meta">200 / 200 registered</div>
+        </div>
+      </div>
+
+      <!-- Event card 3 -->
+      <div class="event-card">
+        <div class="event-img" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">Event Photo</div>
+        <div class="event-body">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div class="event-title">Startup Pitch Night</div>
+            <span class="mock-tag tag-open">Open</span>
+          </div>
+          <div class="event-meta">Jun 28, 2026 · Cebu City</div>
+          <div class="event-meta">62 / 150 registered</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="screen-name">Public Events Listing</div>
+  </div>
+
+  <!-- Screen B: Event Detail Page -->
+  <div class="screen-card" data-choice="detail" onclick="toggleSelect(this)">
+    <div class="screen-label">Public — Event Detail Page</div>
+    <div class="phone-frame">
+      <div class="mock-topbar">← Tech Summit 2026</div>
+
+      <div class="detail-photo">📷 Organizer Event Photo</div>
+
+      <div style="font-weight:700;font-size:11px;color:#1e293b;">Tech Summit 2026</div>
+      <div style="font-size:8px;color:#64748b;margin-top:2px;">📅 June 15, 2026 &nbsp;·&nbsp; 📍 Makati City</div>
+      <div style="font-size:8px;color:#64748b;">🧑‍💼 Organized by: Mark Muya</div>
+
+      <hr class="mock-divider">
+
+      <div style="font-size:8px;color:#475569;line-height:1.5;margin-bottom:6px;">
+        Join the biggest tech gathering of 2026! Featuring keynotes, workshops, and networking opportunities for developers, designers, and entrepreneurs.
+      </div>
+
+      <div style="font-size:8px;font-weight:700;color:#334155;margin-bottom:2px;">Registration Capacity</div>
+      <div style="font-size:8px;color:#64748b;">248 of 500 slots filled</div>
+      <div class="capacity-bar-wrap"><div class="capacity-bar"></div></div>
+
+      <hr class="mock-divider">
+
+      <div class="mock-btn" style="text-align:center;">Register for this Event →</div>
+    </div>
+    <div class="screen-name">Event Detail Page</div>
+  </div>
+
+</div>
+
+<!-- Private event screen below -->
+<div style="margin-top:24px;">
+  <div class="screen-card" style="max-width:360px;margin:0 auto;" data-choice="private" onclick="toggleSelect(this)">
+    <div class="screen-label" style="background:#fef9c3;color:#a16207;">Private Event — Access by Code</div>
+    <div class="phone-frame">
+      <div class="mock-topbar" style="background:#0f172a;">🔒 Private Event Access</div>
+      <div class="private-screen">
+        <div style="font-size:28px;margin-bottom:8px;">🔐</div>
+        <div style="font-size:10px;font-weight:700;color:#1e293b;margin-bottom:4px;">This event is private</div>
+        <div style="font-size:9px;color:#64748b;margin-bottom:10px;">Enter the event code shared by the organizer to access and register.</div>
+        <div style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;padding:6px;font-size:9px;color:#94a3b8;text-align:center;letter-spacing:0.15em;margin-bottom:8px;">Enter Event Code</div>
+        <div class="mock-btn">Find Event</div>
+      </div>
+    </div>
+    <div class="screen-name">Private Event — Code Access</div>
+  </div>
+</div>
+
+<div style="margin-top:16px;font-size:11px;color:#64748b;">Click any screen to flag it. Share thoughts in the terminal — anything to add or change?</div>

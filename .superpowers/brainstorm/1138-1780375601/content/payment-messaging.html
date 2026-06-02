@@ -1,0 +1,188 @@
+<h2>Payment & Messaging Flows</h2>
+<p class="subtitle">Registrant status page in different states (left) and Organizer management screens (right). Click any card to flag it.</p>
+
+<style>
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 20px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 20px; }
+.screen-card { border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; background: #fff; }
+.screen-card:hover { border-color: #6366f1; box-shadow: 0 4px 16px rgba(99,102,241,0.12); }
+.screen-card.selected { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+.label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 6px 12px; border-bottom: 1px solid #e2e8f0; }
+.label.blue { background: #eff6ff; color: #3b82f6; }
+.label.green { background: #f0fdf4; color: #16a34a; }
+.label.amber { background: #fffbeb; color: #d97706; }
+.label.purple { background: #f5f3ff; color: #7c3aed; }
+.pf { background: #f1f5f9; margin: 10px; border-radius: 8px; padding: 10px; font-size: 10px; min-height: 180px; }
+.topbar { color: #fff; padding: 6px 10px; border-radius: 5px 5px 0 0; font-weight: 600; font-size: 10px; margin: -10px -10px 8px -10px; }
+.tb-indigo { background: #6366f1; }
+.tb-green { background: #16a34a; }
+.tb-amber { background: #d97706; }
+.tb-dark { background: #0f172a; }
+.divider { border: none; border-top: 1px solid #e2e8f0; margin: 6px 0; }
+.btn { border-radius: 4px; padding: 5px 10px; font-size: 9px; font-weight: 600; text-align: center; margin-top: 4px; color: #fff; }
+.btn-indigo { background: #6366f1; }
+.btn-green { background: #16a34a; }
+.btn-red { background: #dc2626; }
+.btn-amber { background: #d97706; }
+.btn-slate { background: #475569; }
+.tag { padding: 2px 7px; border-radius: 10px; font-size: 8px; font-weight: 700; display: inline-block; }
+.tag-pending { background: #fef3c7; color: #d97706; }
+.tag-approved { background: #dcfce7; color: #16a34a; }
+.tag-rejected { background: #fee2e2; color: #dc2626; }
+.tag-awaiting { background: #ede9fe; color: #7c3aed; }
+.tag-submitted { background: #dbeafe; color: #2563eb; }
+.msg-bubble { background: #eff6ff; border-left: 3px solid #6366f1; border-radius: 4px; padding: 5px 7px; margin-bottom: 5px; font-size: 8px; }
+.msg-bubble .msg-title { font-weight: 700; color: #3730a3; margin-bottom: 2px; }
+.msg-bubble .msg-body { color: #475569; line-height: 1.4; }
+.field { background: #fff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 6px; margin-bottom: 5px; font-size: 9px; color: #94a3b8; }
+.screen-name { text-align: center; font-size: 11px; font-weight: 600; padding: 8px; color: #334155; border-top: 1px solid #e2e8f0; }
+.section-head { font-size: 12px; font-weight: 700; color: #475569; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+.info-box { border-radius: 5px; padding: 6px 8px; margin-bottom: 5px; font-size: 8px; }
+.info-blue { background: #eff6ff; color: #1e40af; }
+.info-amber { background: #fffbeb; color: #92400e; }
+.info-green { background: #f0fdf4; color: #14532d; }
+.registrant-row { background: #fff; border-radius: 4px; padding: 5px 7px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+</style>
+
+<!-- REGISTRANT STATUS PAGE STATES -->
+<div class="section-head">Registrant Status Page — Different States</div>
+<div class="grid-3">
+
+  <!-- State 1: Pending -->
+  <div class="screen-card" data-choice="status-pending" onclick="toggleSelect(this)">
+    <div class="label blue">Registrant — Pending</div>
+    <div class="pf">
+      <div class="topbar tb-amber">My Registration Status</div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <div style="font-weight:700;font-size:10px;color:#1e293b;">Tech Summit 2026</div>
+        <div class="tag tag-pending" style="margin-top:3px;">⏳ Pending Review</div>
+      </div>
+      <div class="qr-wrap" style="text-align:center;">
+        <div style="width:52px;height:52px;background:#fff;border:2px solid #d97706;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;">▦</div>
+        <div style="font-family:monospace;font-size:10px;color:#d97706;font-weight:700;margin-top:3px;">EVT-7X4K2M</div>
+      </div>
+      <div class="divider"></div>
+      <div class="info-box info-amber">
+        <div style="font-weight:700;margin-bottom:2px;">⏱ Your registration is under review</div>
+        Please check back within <b>24–48 hours</b> for a status update. No action needed from your end for now.
+      </div>
+    </div>
+    <div class="screen-name">Status: Pending</div>
+  </div>
+
+  <!-- State 2: Awaiting Payment -->
+  <div class="screen-card" data-choice="status-payment" onclick="toggleSelect(this)">
+    <div class="label purple">Registrant — Awaiting Payment</div>
+    <div class="pf">
+      <div class="topbar" style="background:#7c3aed;">My Registration Status</div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <div style="font-weight:700;font-size:10px;color:#1e293b;">Tech Summit 2026</div>
+        <div class="tag tag-awaiting" style="margin-top:3px;">💳 Awaiting Payment</div>
+      </div>
+      <div class="info-box" style="background:#f5f3ff;color:#4c1d95;">
+        <div style="font-weight:700;margin-bottom:2px;">Payment Required</div>
+        <div style="font-size:9px;font-weight:700;color:#7c3aed;margin-bottom:2px;">Amount: ₱500.00</div>
+        GCash: 0917-123-4567 (Mark M.)<br>
+        BPI: 1234-5678-90 (Mark Muya)<br>
+        <span style="color:#94a3b8;">Include your ID code in remarks.</span>
+      </div>
+      <div class="field">Paste Google Drive link to proof of payment</div>
+      <div class="btn btn-indigo" style="background:#7c3aed;">Submit Payment Proof</div>
+    </div>
+    <div class="screen-name">Status: Awaiting Payment</div>
+  </div>
+
+  <!-- State 3: Approved + Messages -->
+  <div class="screen-card" data-choice="status-approved" onclick="toggleSelect(this)">
+    <div class="label green">Registrant — Approved + Messages</div>
+    <div class="pf">
+      <div class="topbar tb-green">My Registration Status</div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <div style="font-weight:700;font-size:10px;color:#1e293b;">Tech Summit 2026</div>
+        <div class="tag tag-approved" style="margin-top:3px;">✓ Approved</div>
+      </div>
+      <div style="text-align:center;margin-bottom:6px;">
+        <div style="width:52px;height:52px;background:#fff;border:2px solid #16a34a;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;">▦</div>
+        <div style="font-family:monospace;font-size:10px;color:#16a34a;font-weight:700;margin-top:3px;">EVT-7X4K2M</div>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:9px;font-weight:700;color:#334155;margin-bottom:4px;">📢 Event Reminders</div>
+      <div class="msg-bubble">
+        <div class="msg-title">📋 Things to Bring</div>
+        <div class="msg-body">Valid ID, printed confirmation, laptop if joining workshops.</div>
+      </div>
+      <div class="msg-bubble">
+        <div class="msg-title">🚫 Not Allowed</div>
+        <div class="msg-body">No outside food or drinks. No recording of keynotes.</div>
+      </div>
+    </div>
+    <div class="screen-name">Status: Approved + Messages</div>
+  </div>
+
+</div>
+
+<!-- ORGANIZER SIDE -->
+<div class="section-head" style="margin-top:28px;">Organizer Screens — Payment Setup & Registrant Management</div>
+<div class="grid-2">
+
+  <!-- Organizer: Event Settings (Payment + Capacity) -->
+  <div class="screen-card" data-choice="org-event-settings" onclick="toggleSelect(this)">
+    <div class="label green">Organizer — Event Settings</div>
+    <div class="pf">
+      <div class="topbar tb-green">Edit Event · Tech Summit 2026</div>
+      <div style="font-size:9px;font-weight:700;color:#334155;margin-bottom:4px;">Capacity</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+        <div class="field" style="margin:0;flex:1;">500</div>
+        <div class="btn btn-green" style="margin:0;padding:4px 8px;">▲ Increase</div>
+        <div class="btn btn-slate" style="margin:0;padding:4px 8px;">▼ Decrease</div>
+      </div>
+      <div style="font-size:8px;color:#94a3b8;margin-bottom:8px;">248 registered · 252 slots remaining</div>
+      <div class="divider"></div>
+      <div style="font-size:9px;font-weight:700;color:#334155;margin-bottom:4px;">Payment (optional)</div>
+      <div style="display:flex;gap:6px;margin-bottom:4px;align-items:center;">
+        <span style="font-size:9px;">Require payment?</span>
+        <div style="background:#16a34a;color:#fff;padding:2px 8px;border-radius:10px;font-size:8px;font-weight:700;">ON</div>
+      </div>
+      <div class="field">Amount: ₱ 500.00</div>
+      <div class="field" style="height:40px;color:#94a3b8;font-size:8px;">Payment instructions (GCash, bank details, etc.)</div>
+      <div class="divider"></div>
+      <div style="font-size:9px;font-weight:700;color:#334155;margin-bottom:4px;">📢 Post Announcement</div>
+      <div class="field" style="height:32px;color:#94a3b8;font-size:8px;">Write a reminder or notice for approved registrants...</div>
+      <div class="btn btn-green">Post Message</div>
+    </div>
+    <div class="screen-name">Event Settings — Capacity, Payment & Messaging</div>
+  </div>
+
+  <!-- Organizer: Registrant Detail -->
+  <div class="screen-card" data-choice="org-registrant" onclick="toggleSelect(this)">
+    <div class="label green">Organizer — Registrant Detail</div>
+    <div class="pf">
+      <div class="topbar tb-green">← Registrant Detail</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div>
+          <div style="font-weight:700;font-size:10px;">Maria Santos</div>
+          <div style="font-size:8px;color:#94a3b8;">EVT-7X4K2M · Jun 10, 9:04 AM</div>
+        </div>
+        <div class="tag tag-submitted">💳 Proof Submitted</div>
+      </div>
+      <div class="info-box info-blue" style="margin-bottom:6px;">
+        <div style="font-weight:700;margin-bottom:2px;">Payment Proof</div>
+        <div style="color:#2563eb;text-decoration:underline;font-size:9px;">🔗 drive.google.com/file/...</div>
+      </div>
+      <div style="font-size:8px;color:#475569;margin-bottom:6px;">
+        <b>Company:</b> Accenture PH<br>
+        <b>T-Shirt:</b> Medium
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex;gap:5px;">
+        <div class="btn btn-green" style="flex:1;text-align:center;">✓ Approve</div>
+        <div class="btn btn-red" style="flex:1;text-align:center;">✗ Reject</div>
+      </div>
+      <div class="field" style="margin-top:6px;color:#94a3b8;font-size:8px;">Reason for rejection (required if rejecting)...</div>
+    </div>
+    <div class="screen-name">Registrant Detail — Approve / Reject</div>
+  </div>
+
+</div>
+
+<div style="margin-top:14px;font-size:11px;color:#64748b;">Click any card to flag it. Let me know in the terminal if anything needs adjusting — then we'll move into the full design document.</div>

@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organizer {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  events       Event[]
+}
+
+enum EventStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+model Event {
+  id                  String         @id @default(uuid())
+  organizerId         String
+  organizer           Organizer      @relation(fields: [organizerId], references: [id])
+  slug                String         @unique
+  title               String
+  description         String         @db.Text
+  photoKey            String?
+  date                DateTime
+  location            String
+  maxCapacity         Int
+  isPrivate           Boolean        @default(false)
+  eventCode           String?
+  requiresPayment     Boolean        @default(false)
+  paymentAmount       Decimal?       @db.Decimal(10, 2)
+  paymentInstructions String?        @db.Text
+  status              EventStatus    @default(DRAFT)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  formFields          FormField[]
+  registrations       Registration[]
+  announcements       Announcement[]
+}
+
+enum FieldType {
+  TEXT
+  EMAIL
+  TEL
+  NUMBER
+  SELECT
+  RADIO
+  CHECKBOX
+  TEXTAREA
+}
+
+model FormField {
+  id         String    @id @default(uuid())
+  eventId    String
+  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  label      String
+  fieldType  FieldType
+  options    Json?
+  isRequired Boolean   @default(false)
+  sortOrder  Int
+}
+
+enum RegistrationStatus {
+  PENDING
+  AWAITING_PAYMENT
+  PAYMENT_SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Registration {
+  id               String             @id @default(uuid())
+  eventId          String
+  event            Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrationCode String             @unique
+  status           RegistrationStatus @default(PENDING)
+  rejectionReason  String?            @db.Text
+  responses        Json
+  paymentProofKey  String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  checkIns         CheckIn[]
+}
+
+enum CheckInType {
+  CHECKIN
+  CHECKOUT
+}
+
+model CheckIn {
+  id             String       @id @default(uuid())
+  registrationId String
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  type           CheckInType
+  scannedAt      DateTime     @default(now())
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title     String
+  body      String   @db.Text
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
