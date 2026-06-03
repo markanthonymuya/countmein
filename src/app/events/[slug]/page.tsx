@@ -10,7 +10,7 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
     include: { _count: { select: { registrations: true } }, organizer: true },
   })
 
-  if (!event || event.isPrivate) notFound()
+  if (!event) notFound()
 
   const activeCount = event._count.registrations
   const isFull = activeCount >= event.maxCapacity
@@ -20,7 +20,9 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Link href="/events" className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">← All Events</Link>
+      {!event.isPrivate && (
+        <Link href="/events" className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">← All Events</Link>
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-6xl">
@@ -28,7 +30,12 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
         </div>
         <div className="p-6">
           <div className="flex items-start justify-between gap-4 mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
+              {event.isPrivate && (
+                <span className="text-xs text-amber-600 font-medium">🔒 Private Event</span>
+              )}
+            </div>
             <span className={`text-sm px-3 py-1 rounded-full font-medium flex-shrink-0 ${
               isFull ? 'bg-red-100 text-red-600' : isOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
             }`}>
@@ -39,7 +46,7 @@ export default async function EventDetailPage({ params }: { params: { slug: stri
           <div className="space-y-2 text-sm text-gray-600 mb-4">
             <p>📅 {new Date(event.date).toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             <p>📍 {event.location}</p>
-            <p>🧑‍💼 Organized by {event.organizer.name}</p>
+            <p>🧑‍💼 Organized by {event.isPrivate ? 'Event Organizer' : event.organizer.name}</p>
             {event.requiresPayment && event.paymentAmount && (
               <p>💳 Registration fee: ₱{Number(event.paymentAmount).toLocaleString()}</p>
             )}

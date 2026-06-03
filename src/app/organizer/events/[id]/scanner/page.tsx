@@ -1,9 +1,12 @@
 'use client'
 import { useParams } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+
+const CameraScanner = dynamic(() => import('@/components/CameraScanner'), { ssr: false })
 
 type EventDay = { id: string; label: string; date: string }
-type Result = { success: boolean; type?: string; scannedAt?: string; responses?: any; insideCount?: number; error?: string }
+type Result = { success: boolean; type?: string; scannedAt?: string; insideCount?: number; error?: string }
 
 export default function ScannerPage() {
   const { id } = useParams<{ id: string }>()
@@ -11,9 +14,8 @@ export default function ScannerPage() {
   const [days, setDays] = useState<EventDay[]>([])
   const [selectedDayId, setSelectedDayId] = useState<string | undefined>(undefined)
   const [result, setResult] = useState<Result | null>(null)
-  const [manualCode, setManualCode] = useState('')
   const [scanning, setScanning] = useState(false)
-  const scannerRef = useRef<any>(null)
+  const [manualCode, setManualCode] = useState('')
 
   useEffect(() => {
     fetch(`/api/events/${id}/days`).then(r => r.json()).then((data: EventDay[]) => {
@@ -22,41 +24,22 @@ export default function ScannerPage() {
     })
   }, [id])
 
-  useEffect(() => {
-    let scanner: any
-    async function startScanner() {
-      const { Html5QrcodeScanner } = await import('html5-qrcode')
-      scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false)
-      scanner.render(
-        async (decodedText: string) => {
-          let code = decodedText
-          try { code = new URL(decodedText).searchParams.get('code') || decodedText } catch {}
-          scanner.clear()
-          await scan(code)
-        },
-        () => {}
-      )
-      scannerRef.current = scanner
-    }
-    if (scanning) startScanner()
-    return () => { try { scannerRef.current?.clear() } catch {} }
-  }, [scanning, mode, selectedDayId])
-
-  async function scan(code: string) {
+  async function processCode(code: string) {
+    setScanning(false)
     const res = await fetch(`/api/events/${id}/checkins`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ registrationCode: code, type: mode, eventDayId: selectedDayId }),
+      body: JSON.stringify({ registrationCode: code.toUpperCase(), type: mode, eventDayId: selectedDayId }),
     })
     const data = await res.json()
     setResult(res.ok ? { success: true, ...data } : { success: false, error: data.error })
-    setScanning(false)
-    setTimeout(() => setResult(null), 5000)
+    setTimeout(() => setResult(null), 6000)
   }
 
   async function handleManual(e: React.FormEvent) {
     e.preventDefault()
-    await scan(manualCode)
+    if (!manualCode.trim()) return
+    await processCode(manualCode)
     setManualCode('')
   }
 
@@ -69,7 +52,7 @@ export default function ScannerPage() {
         <h1 className="text-xl font-bold text-gray-900">QR Scanner</h1>
       </div>
 
-      {/* Day selector — only shown for multi-day events */}
+      {/* Day selector — multi-day events only */}
       {days.length > 0 && (
         <div className="bg-indigo-50 rounded-xl p-4 mb-4">
           <label className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-2 block">Scanning for day</label>
@@ -91,7 +74,7 @@ export default function ScannerPage() {
         </div>
       )}
 
-      {/* Mode toggle */}
+      {/* Check-in / Check-out toggle */}
       <div className="flex gap-2 mb-4">
         {(['CHECKIN', 'CHECKOUT'] as const).map(m => (
           <button key={m} onClick={() => setMode(m)}
@@ -107,35 +90,52 @@ export default function ScannerPage() {
 
       {/* Result banner */}
       {result && (
-        <div className={`rounded-xl p-4 mb-4 text-sm font-medium ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+        <div className={`rounded-xl p-4 mb-4 text-sm font-medium ${
+          result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'
+        }`}>
           {result.success
-            ? `✓ ${result.type === 'CHECKIN' ? 'Checked in' : 'Checked out'} · ${new Date(result.scannedAt!).toLocaleTimeString()} · ${result.insideCount ?? 0} inside`
+            ? `✓ ${result.type === 'CHECKIN' ? 'Checked in' : 'Checked out'} · ${new Date(result.scannedAt!).toLocaleTimeString()} · ${result.insideCount ?? 0} inside now`
             : `✗ ${result.error}`}
         </div>
       )}
 
-      {/* Camera */}
-      {!scanning ? (
-        <button onClick={() => setScanning(true)}
-          className="w-full bg-indigo-600 text-white rounded-xl py-4 font-semibold hover:bg-indigo-700 transition-colors mb-4">
-          📷 Start Camera Scan
-        </button>
-      ) : (
+      {/* Camera scanner */}
+      {scanning ? (
         <div className="mb-4">
-          <div id="qr-reader" className="rounded-xl overflow-hidden" />
-          <button onClick={() => setScanning(false)} className="mt-2 w-full text-sm text-gray-500 hover:text-gray-700">
-            Cancel
-          </button>
+          <CameraScanner
+            onScan={processCode}
+            onClose={() => setScanning(false)}
+          />
         </div>
+      ) : (
+        <button
+          onClick={() => setScanning(true)}
+          className="w-full bg-indigo-600 text-white rounded-xl py-4 font-semibold hover:bg-indigo-700 transition-colors mb-4 flex items-center justify-center gap-2"
+        >
+          📷 Open Camera to Scan QR Code
+        </button>
       )}
 
-      {/* Manual entry */}
+      {/* Manual code entry */}
+      <div className="relative">
+        <div className="absolute inset-x-0 top-0 flex items-center" aria-hidden>
+          <div className="w-full border-t border-gray-200" />
+        </div>
+        <div className="relative flex justify-center mb-4">
+          <span className="bg-gray-50 px-3 text-xs text-gray-400">or enter code manually</span>
+        </div>
+      </div>
       <form onSubmit={handleManual} className="flex gap-2">
-        <input className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-          placeholder="Enter code manually" value={manualCode}
-          onChange={e => setManualCode(e.target.value.toUpperCase())} maxLength={8} />
-        <button type="submit" className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700">
-          Scan
+        <input
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono uppercase tracking-widest focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+          placeholder="e.g. A3K9PX7M"
+          value={manualCode}
+          onChange={e => setManualCode(e.target.value.toUpperCase())}
+          maxLength={8}
+        />
+        <button type="submit"
+          className="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+          Submit
         </button>
       </form>
     </div>

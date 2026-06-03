@@ -1,5 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
+import dynamic from 'next/dynamic'
+
+const CameraScanner = dynamic(() => import('@/components/CameraScanner'), { ssr: false })
 
 type StatusData = {
   code: string; status: string; rejectionReason?: string
@@ -8,11 +11,11 @@ type StatusData = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:          { label: '⏳ Pending Review',     color: 'text-amber-700',  bg: 'bg-amber-50'  },
-  AWAITING_PAYMENT: { label: '💳 Awaiting Payment',   color: 'text-purple-700', bg: 'bg-purple-50' },
-  PAYMENT_SUBMITTED:{ label: '🔍 Payment Under Review',color: 'text-blue-700',  bg: 'bg-blue-50'   },
-  APPROVED:         { label: '✓ Approved',            color: 'text-green-700',  bg: 'bg-green-50'  },
-  REJECTED:         { label: '✗ Rejected',            color: 'text-red-700',    bg: 'bg-red-50'    },
+  PENDING:           { label: '⏳ Pending Review',        color: 'text-amber-700',  bg: 'bg-amber-50'  },
+  AWAITING_PAYMENT:  { label: '💳 Awaiting Payment',      color: 'text-purple-700', bg: 'bg-purple-50' },
+  PAYMENT_SUBMITTED: { label: '🔍 Payment Under Review',  color: 'text-blue-700',   bg: 'bg-blue-50'   },
+  APPROVED:          { label: '✓ Approved',               color: 'text-green-700',  bg: 'bg-green-50'  },
+  REJECTED:          { label: '✗ Rejected',               color: 'text-red-700',    bg: 'bg-red-50'    },
 }
 
 export default function StatusPage({ searchParams }: { searchParams: { code?: string } }) {
@@ -21,21 +24,20 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState<'type' | 'upload'>('type')
+  const [tab, setTab] = useState<'type' | 'camera' | 'upload'>('type')
   const fileRef = useRef<HTMLInputElement>(null)
-
-  // Upload file vars
-  const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadDone, setUploadDone] = useState(false)
 
   async function lookup(lookupCode: string) {
     setLoading(true)
     setError('')
+    setTab('type')
     const res = await fetch(`/api/registrations/${lookupCode.toUpperCase().trim()}`)
     setLoading(false)
     if (!res.ok) return setError('Registration not found. Check your code and try again.')
     const result = await res.json()
+    setCode(result.code)
     setData(result)
     if (result.status === 'APPROVED') {
       const qr = await fetch(`/api/qr?code=${result.code}`).then(r => r.text())
@@ -44,19 +46,20 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
   }
 
   async function handleImageUpload(file: File) {
+    setError('')
     const img = new Image()
     img.src = URL.createObjectURL(file)
     img.onload = async () => {
       const canvas = document.createElement('canvas')
-      canvas.width = img.width; canvas.height = img.height
+      canvas.width = img.width
+      canvas.height = img.height
       canvas.getContext('2d')!.drawImage(img, 0, 0)
       const imageData = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height)
       const jsQR = (await import('jsqr')).default
       const result = jsQR(imageData.data, imageData.width, imageData.height)
       if (!result) return setError('Could not read QR code from image. Try a clearer screenshot.')
-      const url = new URL(result.data)
-      const extracted = url.searchParams.get('code') || result.data
-      setCode(extracted)
+      let extracted = result.data
+      try { extracted = new URL(result.data).searchParams.get('code') || result.data } catch {}
       lookup(extracted)
     }
   }
@@ -65,15 +68,16 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
     const file = e.target.files?.[0]
     if (!file || !data) return
     setUploading(true)
-    const contentType = file.type as any
+    setError('')
     const res = await fetch('/api/upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ registrationCode: data.code, contentType }),
+      body: JSON.stringify({ registrationCode: data.code, contentType: file.type }),
     })
     if (!res.ok) { setUploading(false); return setError('Upload failed. Please try again.') }
     const { uploadUrl } = await res.json()
-    await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })
+    const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
+    if (!uploadRes.ok) { setUploading(false); return setError('Upload to storage failed. Please try again.') }
     setUploading(false)
     setUploadDone(true)
     lookup(data.code)
@@ -88,18 +92,30 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-4">
-        {(['type', 'upload'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${tab === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-            {t === 'type' ? '⌨️ Enter Code' : '🖼 Upload QR'}
+        {([
+          { key: 'type',   label: '⌨️ Enter Code' },
+          { key: 'camera', label: '📷 Scan QR'    },
+          { key: 'upload', label: '🖼 Upload QR'  },
+        ] as const).map(({ key, label }) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`flex-1 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
+              tab === key ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+            }`}>
+            {label}
           </button>
         ))}
       </div>
 
+      {/* Tab: type code */}
       {tab === 'type' && (
         <form onSubmit={e => { e.preventDefault(); lookup(code) }} className="space-y-3 mb-4">
-          <input className="w-full border border-gray-200 rounded-xl px-4 py-3 text-center font-mono text-lg tracking-widest uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
-            placeholder="e.g. A3K9PX7M" value={code} onChange={e => setCode(e.target.value.toUpperCase())} maxLength={8} />
+          <input
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-center font-mono text-lg tracking-widest uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+            placeholder="e.g. A3K9PX7M"
+            value={code}
+            onChange={e => setCode(e.target.value.toUpperCase())}
+            maxLength={8}
+          />
           <button type="submit" disabled={loading}
             className="w-full bg-indigo-600 text-white rounded-xl py-2.5 font-semibold hover:bg-indigo-700 disabled:opacity-60 transition-colors">
             {loading ? 'Checking…' : 'Check Status'}
@@ -107,21 +123,40 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
         </form>
       )}
 
+      {/* Tab: camera scan */}
+      {tab === 'camera' && (
+        <div className="mb-4">
+          <CameraScanner
+            onScan={code => lookup(code)}
+            onClose={() => setTab('type')}
+          />
+        </div>
+      )}
+
+      {/* Tab: upload screenshot */}
       {tab === 'upload' && (
         <div className="mb-4 space-y-3">
-          <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0])} />
-          <button onClick={() => fileRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-200 rounded-xl py-8 text-center text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            className="w-full border-2 border-dashed border-gray-200 rounded-xl py-8 text-center text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+          >
             <div className="text-3xl mb-2">🖼</div>
             <div className="text-sm font-medium">Upload QR screenshot</div>
-            <div className="text-xs mt-1">JPG or PNG</div>
+            <div className="text-xs text-gray-400 mt-1">JPG or PNG</div>
           </button>
         </div>
       )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 mb-4">{error}</p>}
 
+      {/* Status result */}
       {data && s && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
           <div>
@@ -148,10 +183,14 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
                 <p className="text-purple-600 whitespace-pre-wrap text-xs">{data.event.paymentInstructions}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Upload proof of payment:</p>
-                <input type="file" accept="image/*,application/pdf"
-                  onChange={handlePaymentUpload} disabled={uploading}
-                  className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 disabled:opacity-60" />
+                <p className="text-sm font-medium text-gray-700 mb-2">Upload proof of payment (image or PDF):</p>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handlePaymentUpload}
+                  disabled={uploading}
+                  className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 disabled:opacity-60"
+                />
                 {uploading && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
                 {uploadDone && <p className="text-xs text-green-600 mt-1">✓ Uploaded successfully</p>}
               </div>
