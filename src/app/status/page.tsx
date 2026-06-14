@@ -78,6 +78,14 @@ export default function StatusPage({ searchParams }: { searchParams: { code?: st
     const { uploadUrl } = await res.json()
     const uploadRes = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
     if (!uploadRes.ok) { setUploading(false); return setError('Upload to storage failed. Please try again.') }
+
+    const confirmRes = await fetch('/api/upload/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrationCode: data.code }),
+    })
+    if (!confirmRes.ok) { setUploading(false); return setError('Upload failed to register. Please try again.') }
+
     setUploading(false)
     setUploadDone(true)
     lookup(data.code)

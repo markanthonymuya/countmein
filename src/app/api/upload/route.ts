@@ -24,9 +24,11 @@ export async function POST(req: Request) {
   const key = `events/${reg.eventId}/payments/${reg.id}.${ext}`
   const uploadUrl = await getPresignedPutUrl(key, parsed.data.contentType)
 
+  // Save the key now so the organizer can find the file; status stays AWAITING_PAYMENT
+  // until the client confirms the upload actually completed (see /api/upload/confirm).
   await prisma.registration.update({
     where: { id: reg.id },
-    data: { paymentProofKey: key, status: 'PAYMENT_SUBMITTED' },
+    data: { paymentProofKey: key },
   })
 
   return NextResponse.json({ uploadUrl, key })

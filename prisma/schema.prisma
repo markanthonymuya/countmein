@@ -47,6 +47,8 @@ model Event {
   registrations       Registration[]
   announcements       Announcement[]
   days                EventDay[]
+
+  @@index([organizerId])
 }
 
 model EventDay {
@@ -101,6 +103,9 @@ model Registration {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   checkIns         CheckIn[]
+
+  @@index([eventId])
+  @@index([status])
 }
 
 enum CheckInType {
@@ -116,6 +121,9 @@ model CheckIn {
   eventDay       EventDay? @relation(fields: [eventDayId], references: [id])
   type           CheckInType
   scannedAt      DateTime  @default(now())
+
+  @@index([registrationId])
+  @@index([eventDayId])
 }
 
 model Announcement {
